@@ -64,7 +64,25 @@ if "active_cooking_step" not in st.session_state:
     st.session_state.active_cooking_step = 1
 
 if "gemini_api_key" not in st.session_state:
-    st.session_state.gemini_api_key = os.environ.get("GEMINI_API_KEY", "")
+    _key = os.environ.get("GEMINI_API_KEY", "").strip()
+    if not _key:
+        try:
+            if hasattr(st, "secrets") and "GEMINI_API_KEY" in st.secrets:
+                _key = str(st.secrets["GEMINI_API_KEY"]).strip()
+        except Exception:
+            pass
+    if not _key:
+        try:
+            _env_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+            if os.path.exists(_env_file):
+                with open(_env_file, "r", encoding="utf-8") as _f:
+                    for _line in _f:
+                        if _line.strip().startswith("GEMINI_API_KEY="):
+                            _key = _line.strip().split("=", 1)[1].strip().strip('"').strip("'")
+                            break
+        except Exception:
+            pass
+    st.session_state.gemini_api_key = _key
 
 if "enable_gemini" not in st.session_state:
     st.session_state.enable_gemini = True
@@ -980,13 +998,22 @@ def resolve_dataset_file():
                     return os.path.join(folder, f)
     return os.path.join(BASE_DIR, "recipes_backup.csv")
 
-detector = IngredientDetector()
-try:
-    dataset_path = resolve_dataset_file()
-    recommender = RecipeRecommender(dataset_path)
-except Exception:
-    recommender = RecipeRecommender()
-    recommender.df = recipes_backup.get_backup_df()
+@st.cache_resource(show_spinner="Initializing Neural Vision Engine...")
+def get_detector():
+    return IngredientDetector()
+
+@st.cache_resource(show_spinner="Loading Recipe Recommendation Database...")
+def get_recommender():
+    try:
+        dataset_path = resolve_dataset_file()
+        return RecipeRecommender(dataset_path)
+    except Exception:
+        rec = RecipeRecommender()
+        rec.df = recipes_backup.get_backup_df()
+        return rec
+
+detector = get_detector()
+recommender = get_recommender()
 
 # ---------------------------------------------------------
 # Ingredient Metadata & Styling
