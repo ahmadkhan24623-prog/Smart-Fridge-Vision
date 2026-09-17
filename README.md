@@ -1,3 +1,13 @@
+---
+title: Smart Fridge Vision
+emoji: 🌿
+colorFrom: green
+colorTo: emerald
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # 🌿 Smart Fridge Vision & Culinary AI Engine
 **Pir Mehr Ali Shah Arid Agriculture University Rawalpindi (PMAS-AAUR)**  
 *Department of Computer Science & Information Technology*  
